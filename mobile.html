@@ -31,10 +31,7 @@
             text-align: center;
         }
         
-        .logo {
-            font-size: 64px;
-            margin-bottom: 10px;
-        }
+        .logo { font-size: 64px; margin-bottom: 10px; }
         
         .title {
             font-size: 22px;
@@ -69,9 +66,7 @@
             transition: border-color 0.3s;
         }
         
-        .code-input:focus {
-            border-color: #667eea;
-        }
+        .code-input:focus { border-color: #667eea; }
         
         .activate-btn {
             width: 100%;
@@ -86,14 +81,8 @@
             transition: transform 0.2s;
         }
         
-        .activate-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .activate-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+        .activate-btn:active { transform: scale(0.98); }
+        .activate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .status {
             margin-top: 20px;
@@ -105,9 +94,7 @@
         .status.success { color: #4caf50; }
         .status.loading { color: #ff9800; }
         
-        .loading-container {
-            display: none;
-        }
+        .loading-container { display: none; }
         
         .spinner {
             width: 60px;
@@ -124,9 +111,7 @@
             100% { transform: rotate(360deg); }
         }
         
-        .user-info {
-            display: none;
-        }
+        .user-info { display: none; }
         
         .user-avatar {
             width: 80px;
@@ -155,6 +140,7 @@
         }
         
         .enter-btn {
+            display: block;
             width: 100%;
             padding: 18px;
             font-size: 18px;
@@ -165,11 +151,11 @@
             border-radius: 12px;
             cursor: pointer;
             margin-bottom: 10px;
+            text-decoration: none;
+            text-align: center;
         }
         
-        .enter-btn:active {
-            transform: scale(0.98);
-        }
+        .enter-btn:active { transform: scale(0.98); }
         
         .logout-btn {
             width: 100%;
@@ -193,13 +179,25 @@
             text-align: left;
         }
         
-        .tips-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-        }
+        .tips-title { font-weight: bold; margin-bottom: 5px; color: #333; }
         
         .hidden { display: none !important; }
+        
+        .manual-enter {
+            display: none;
+        }
+        
+        .manual-enter-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -253,6 +251,22 @@
             <button class="logout-btn" onclick="logout()">
                 切换账号
             </button>
+        </div>
+        
+        <!-- 手动跳转界面（APP兼容模式） -->
+        <div id="jumpPage" class="manual-enter">
+            <div class="logo">✅</div>
+            <div class="title">服务器已连接</div>
+            <div class="subtitle">点击下方按钮进入系统</div>
+            
+            <a id="jumpBtn" class="manual-enter-btn" href="#" target="_top">
+                🚀 进入系统
+            </a>
+            
+            <div class="tips" style="margin-top:30px;">
+                <div class="tips-title">💡 提示</div>
+                如果点击后没有反应，请检查电脑端程序是否启动。
+            </div>
         </div>
     </div>
 
@@ -379,69 +393,99 @@
         }
         
         async function enterApp() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-        showInputPage();
-        return;
-    }
-    
-    const data = JSON.parse(saved);
-    
-    showLoadingPage('正在获取服务器地址...');
-    
-    try {
-        const res = await fetch(API_URL + '?t=' + Date.now());
-        const gistData = await res.json();
-        const codes = JSON.parse(gistData.files['codes.json'].content);
-        
-        const info = codes[data.code];
-        
-        if (!info) {
-            showInputPage();
-            setStatus('❌ 激活码已被删除', 'error');
-            return;
-        }
-        
-        if (!info.enabled) {
-            showInputPage();
-            setStatus('❌ 激活码已被禁用', 'error');
-            return;
-        }
-        
-        if (!info.current_url) {
-            showInputPage();
-            setStatus('⚠️ 电脑端程序未启动，请先打开电脑上的程序', 'error');
-            return;
-        }
-        
-        document.getElementById('loadingText').textContent = '正在跳转...';
-        
-        // 多方式兼容跳转（APP / 浏览器）
-        setTimeout(() => {
-            try {
-                // 优先使用顶层窗口跳转
-                if (window.top && window.top !== window) {
-                    window.top.location.href = info.current_url;
-                } else {
-                    window.location.href = info.current_url;
-                }
-            } catch(e) {
-                // 跨域时fallback
-                window.location.href = info.current_url;
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) {
+                showInputPage();
+                return;
             }
-        }, 500);
+            
+            const data = JSON.parse(saved);
+            
+            showLoadingPage('正在获取服务器地址...');
+            
+            try {
+                const res = await fetch(API_URL + '?t=' + Date.now());
+                const gistData = await res.json();
+                const codes = JSON.parse(gistData.files['codes.json'].content);
+                
+                const info = codes[data.code];
+                
+                if (!info) {
+                    showInputPage();
+                    setStatus('❌ 激活码已被删除', 'error');
+                    return;
+                }
+                
+                if (!info.enabled) {
+                    showInputPage();
+                    setStatus('❌ 激活码已被禁用', 'error');
+                    return;
+                }
+                
+                if (!info.current_url) {
+                    showInputPage();
+                    setStatus('⚠️ 电脑端程序未启动，请先打开电脑上的程序', 'error');
+                    return;
+                }
+                
+                document.getElementById('loadingText').textContent = '正在跳转...';
+                
+                // 方式1：先尝试直接跳转
+                const targetUrl = info.current_url;
+                
+                // 延迟一下让用户看到loading
+                setTimeout(() => {
+                    // 判断是否在iframe中（APP环境）
+                    const isInIframe = (window.top && window.top !== window.self);
+                    
+                    if (isInIframe) {
+                        // APP环境：显示手动跳转按钮
+                        showJumpPage(targetUrl, data);
+                    } else {
+                        // 浏览器环境：直接跳转
+                        window.location.href = targetUrl;
+                    }
+                }, 500);
+                
+            } catch (e) {
+                console.error(e);
+                showInputPage();
+                setStatus('❌ 连接失败，请重试', 'error');
+            }
+        }
         
-    } catch (e) {
-        console.error(e);
-        showInputPage();
-        setStatus('❌ 连接失败，请重试', 'error');
-    }
-}
+        function showJumpPage(url, userData) {
+            document.getElementById('inputPage').classList.add('hidden');
+            document.getElementById('loadingPage').classList.add('hidden');
+            document.getElementById('userPage').classList.add('hidden');
+            document.getElementById('jumpPage').classList.remove('hidden');
+            
+            document.getElementById('jumpBtn').href = url;
+            
+            // 3秒后自动尝试跳转
+            setTimeout(() => {
+                try {
+                    window.top.location.href = url;
+                } catch(e) {
+                    // 跨域，无法自动跳转
+                }
+            }, 1000);
+        }
+        
+        function logout() {
+            if (confirm('确定要切换账号吗？')) {
+                localStorage.removeItem(STORAGE_KEY);
+                document.getElementById('codeInput').value = '';
+                showInputPage();
+                setStatus('', '');
+            }
+        }
         
         function showInputPage() {
             document.getElementById('inputPage').classList.remove('hidden');
             document.getElementById('loadingPage').classList.add('hidden');
             document.getElementById('userPage').classList.add('hidden');
+            document.getElementById('jumpPage').classList.add('hidden');
             document.getElementById('activateBtn').disabled = false;
         }
         
@@ -449,6 +493,7 @@
             document.getElementById('inputPage').classList.add('hidden');
             document.getElementById('loadingPage').classList.remove('hidden');
             document.getElementById('userPage').classList.add('hidden');
+            document.getElementById('jumpPage').classList.add('hidden');
             if (text) {
                 document.getElementById('loadingText').textContent = text;
             }
@@ -458,6 +503,7 @@
             document.getElementById('inputPage').classList.add('hidden');
             document.getElementById('loadingPage').classList.add('hidden');
             document.getElementById('userPage').classList.remove('hidden');
+            document.getElementById('jumpPage').classList.add('hidden');
             
             document.getElementById('userName').textContent = data.user;
             
