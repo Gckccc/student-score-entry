@@ -379,62 +379,64 @@
         }
         
         async function enterApp() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (!saved) {
-                showInputPage();
-                return;
-            }
-            
-            const data = JSON.parse(saved);
-            
-            showLoadingPage('正在获取服务器地址...');
-            
-            try {
-                const res = await fetch(API_URL + '?t=' + Date.now());
-                const gistData = await res.json();
-                const codes = JSON.parse(gistData.files['codes.json'].content);
-                
-                const info = codes[data.code];
-                
-                if (!info) {
-                    showInputPage();
-                    setStatus('❌ 激活码已被删除', 'error');
-                    return;
-                }
-                
-                if (!info.enabled) {
-                    showInputPage();
-                    setStatus('❌ 激活码已被禁用', 'error');
-                    return;
-                }
-                
-                if (!info.current_url) {
-                    showInputPage();
-                    setStatus('⚠️ 电脑端程序未启动，请先打开电脑上的程序', 'error');
-                    return;
-                }
-                
-                document.getElementById('loadingText').textContent = '正在跳转...';
-                
-                setTimeout(() => {
-                    window.location.href = info.current_url;
-                }, 500);
-                
-            } catch (e) {
-                console.error(e);
-                showInputPage();
-                setStatus('❌ 连接失败，请重试', 'error');
-            }
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+        showInputPage();
+        return;
+    }
+    
+    const data = JSON.parse(saved);
+    
+    showLoadingPage('正在获取服务器地址...');
+    
+    try {
+        const res = await fetch(API_URL + '?t=' + Date.now());
+        const gistData = await res.json();
+        const codes = JSON.parse(gistData.files['codes.json'].content);
+        
+        const info = codes[data.code];
+        
+        if (!info) {
+            showInputPage();
+            setStatus('❌ 激活码已被删除', 'error');
+            return;
         }
         
-        function logout() {
-            if (confirm('确定要切换账号吗？')) {
-                localStorage.removeItem(STORAGE_KEY);
-                document.getElementById('codeInput').value = '';
-                showInputPage();
-                setStatus('', '');
-            }
+        if (!info.enabled) {
+            showInputPage();
+            setStatus('❌ 激活码已被禁用', 'error');
+            return;
         }
+        
+        if (!info.current_url) {
+            showInputPage();
+            setStatus('⚠️ 电脑端程序未启动，请先打开电脑上的程序', 'error');
+            return;
+        }
+        
+        document.getElementById('loadingText').textContent = '正在跳转...';
+        
+        // 多方式兼容跳转（APP / 浏览器）
+        setTimeout(() => {
+            try {
+                // 优先使用顶层窗口跳转
+                if (window.top && window.top !== window) {
+                    window.top.location.href = info.current_url;
+                } else {
+                    window.location.href = info.current_url;
+                }
+            } catch(e) {
+                // 跨域时fallback
+                window.location.href = info.current_url;
+            }
+        }, 500);
+        
+    } catch (e) {
+        console.error(e);
+        showInputPage();
+        setStatus('❌ 连接失败，请重试', 'error');
+    }
+}
         
         function showInputPage() {
             document.getElementById('inputPage').classList.remove('hidden');
