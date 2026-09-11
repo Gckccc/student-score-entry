@@ -11,27 +11,31 @@
         <p id="status">请稍候</p>
     </div>
     <script>
-        const entryId = location.pathname.split('/').filter(x => x).pop() || '';
-        const status = document.getElementById('status');
+        const entryId = new URLSearchParams(location.search).get('id') || '';
         
-        if (!entryId || entryId === 'student-score-entry') {
+        if (!entryId) {
             document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 无效的访问地址</h2><p style="text-align:center;">请使用完整的激活入口</p>';
         } else {
-            status.textContent = '正在获取地址...';
+            document.getElementById('status').textContent = '正在获取地址...';
             fetch('https://api.github.com/gists/276490742b7a690ffb0a035ac4d6fd3b')
                 .then(r => r.json())
                 .then(data => {
-                    const codes = JSON.parse(data.files['codes.json'].content);
-                    for (const code in codes) {
-                        if (codes[code].entry_id === entryId && codes[code].current_url) {
-                            location.href = codes[code].current_url;
-                            return;
+                    try {
+                        const codes = JSON.parse(data.files['codes.json'].content);
+                        for (const code in codes) {
+                            const c = codes[code];
+                            if (c.entry_id && c.entry_id.toUpperCase() === entryId.toUpperCase() && c.current_url) {
+                                location.href = c.current_url;
+                                return;
+                            }
                         }
+                        document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 未找到对应服务器</h2><p style="text-align:center;">请确认电脑端程序已启动</p>';
+                    } catch(e) {
+                        document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 数据错误</h2><p>' + e.message + '</p>';
                     }
-                    document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 未找到对应服务器</h2><p style="text-align:center;">请确认电脑端程序已启动</p>';
                 })
                 .catch(e => {
-                    document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 连接失败</h2>';
+                    document.body.innerHTML = '<h2 style="text-align:center;padding:50px;">❌ 网络错误</h2><p>' + e.message + '</p>';
                 });
         }
     </script>
